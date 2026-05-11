@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+.env
+.secrets/
+secrets/
+
+# password / state files (per-deployment, not source)
+.send-email.log
+.smtp-password
+*.password

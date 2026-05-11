@@ -1,0 +1,80 @@
+#!/usr/bin/env bash
+# send_email — thin wrapper around msmtp for cron / systemd-timer use.
+#
+# Usage:
+#   send_email <to> <subject> <body>      # body as argument
+#   send_email <to> <subject> -           # body from stdin
+#   echo body | send_email <to> <subject> # body from stdin
+#
+# Configuration is environment-only:
+#   SEND_EMAIL_FROM       sender address (required, must match msmtp account)
+#   SEND_EMAIL_ACCOUNT    msmtp account name from ~/.msmtprc (default: "default")
+#   SEND_EMAIL_LOG        append every dispatch here (default: ~/.send-email.log)
+#
+# Prerequisites:
+#   apt install msmtp msmtp-mta
+#   ~/.msmtprc configured with at least one account (chmod 600)
+#   ~/.msmtprc passwordeval pointing at a 600-mode password file
+#
+# Exit codes:
+#   0  sent successfully
+#   1  bad usage
+#   2  msmtp not installed
+#   3  ~/.msmtprc missing
+#   4  SEND_EMAIL_FROM not set
+#   5  msmtp dispatch failed (see stderr)
+
+set -u
+
+if [[ $# -lt 2 ]]; then
+  echo "usage: send_email <to> <subject> [body|-]" >&2
+  echo "       echo body | send_email <to> <subject>" >&2
+  exit 1
+fi
+
+TARGET="$1"
+SUBJECT="$2"
+BODY="${3:-}"
+
+if [[ -z "$BODY" || "$BODY" == "-" ]]; then
+  BODY=$(cat)
+fi
+
+if ! command -v msmtp >/dev/null 2>&1; then
+  echo "error: msmtp not installed (apt install msmtp msmtp-mta)" >&2
+  exit 2
+fi
+
+if [[ ! -f "$HOME/.msmtprc" ]]; then
+  echo "error: ~/.msmtprc not found" >&2
+  exit 3
+fi
+
+if [[ -z "${SEND_EMAIL_FROM:-}" ]]; then
+  echo "error: SEND_EMAIL_FROM environment variable not set" >&2
+  exit 4
+fi
+
+ACCOUNT="${SEND_EMAIL_ACCOUNT:-default}"
+LOG="${SEND_EMAIL_LOG:-$HOME/.send-email.log}"
+
+{
+  printf 'From: %s\r\n' "$SEND_EMAIL_FROM"
+  printf 'To: %s\r\n' "$TARGET"
+  printf 'Subject: %s\r\n' "$SUBJECT"
+  printf 'Content-Type: text/plain; charset=UTF-8\r\n'
+  printf 'MIME-Version: 1.0\r\n'
+  printf '\r\n'
+  printf '%s\n' "$BODY"
+} | msmtp -a "$ACCOUNT" "$TARGET"
+
+rc=$?
+ts=$(date '+%Y-%m-%dT%H:%M:%S%z')
+if [[ $rc -eq 0 ]]; then
+  echo "$ts  OK    to=$TARGET  subject=$SUBJECT" >> "$LOG" 2>/dev/null || true
+  echo "ok: sent to $TARGET"
+else
+  echo "$ts  FAIL  to=$TARGET  subject=$SUBJECT  exit=$rc" >> "$LOG" 2>/dev/null || true
+  echo "error: msmtp exit code $rc" >&2
+  exit 5
+fi
