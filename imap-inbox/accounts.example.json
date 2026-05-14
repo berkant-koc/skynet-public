@@ -1,0 +1,20 @@
+{
+  "accounts": [
+    {
+      "key": "primary",
+      "label": "Primary inbox",
+      "host": "imap.example.com",
+      "port": 993,
+      "user": "alice@example.com",
+      "password_file": "~/.config/imap-inbox/.primary.pw"
+    },
+    {
+      "key": "secondary",
+      "label": "Secondary",
+      "host": "imap.example.net",
+      "port": 993,
+      "user": "bob@example.net",
+      "password_file": "~/.config/imap-inbox/.secondary.pw"
+    }
+  ]
+}

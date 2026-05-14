@@ -1,6 +1,6 @@
 # skynet-public
 
-Two small, opinionated tools I keep around the workstation for working
+Small, opinionated tools I keep around the workstation for working
 with [Claude Code](https://docs.claude.com/en/docs/claude-code) and
 shell-level automation. Stdlib + msmtp only, no framework, no daemons.
 
@@ -28,6 +28,19 @@ the config is incomplete.
 
 Useful as the `mailx` replacement when you want a single line in cron
 or a systemd-timer ExecStart.
+
+### [`imap-inbox/`](imap-inbox/) — read-only multi-account IMAP overview
+
+`imap-inbox [--limit N] [--account KEY]`
+
+Prints the most recent N mails per configured account as one line each
+(`Date | From | Subject`). Reads account list from a JSON config,
+passwords from 0600 files. Uses `BODY.PEEK` and opens INBOX read-only
+— nothing is ever marked as read or modified.
+
+Useful when several accounts forward into a single mailbox and you
+want a glance at what's actually arriving on the source side without
+opening a mail client.
 
 ## Why a repo for this
 
